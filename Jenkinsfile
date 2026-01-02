@@ -1,5 +1,10 @@
 pipeline {
     agent any
+
+    tools {
+        nodejs 'Node20'  // точно такое же имя, как ты задал в Tools
+    }
+
     stages {
         stage('Git Checkout') {
             steps {
