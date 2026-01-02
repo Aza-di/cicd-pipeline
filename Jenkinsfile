@@ -1,37 +1,38 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs 'Node.js 20.x' 
-    }
-
     stages {
-        stage('Git Checkout') {
+        stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/Aza-di/cicd-pipeline.git'
+                Check out SCM
             }
         }
+
         stage('Install Dependencies') {
             steps {
                 sh 'npm install'
             }
         }
+
         stage('Application Build') {
             steps {
                 sh 'scripts/build.sh'
             }
         }
+
         stage('Tests') {
             steps {
                 sh 'scripts/test.sh'
             }
         }
-        stage('Docker Image Build') {
+
+        stage('Build Docker Image') {
             steps {
                 sh 'docker build -t azat279/my-app:latest .'
             }
         }
-        stage('Docker Image Push') {
+
+        stage('Push Docker Image') {
             steps {
                 withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKER_TOKEN')]) {
                     sh '''
@@ -40,6 +41,18 @@ pipeline {
                     '''
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline completed successfully! Docker image pushed!'
+        }
+        failure {
+            echo 'Pipeline failed — check the logs.'
         }
     }
 }
