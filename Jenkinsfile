@@ -1,26 +1,38 @@
 pipeline {
     agent any
 
-    environment {
-        IMAGE_NAME = "azat279/mybuildimage"
-    }
-
     stages {
-        stage('Build Docker Image') {
+        stage('Git Checkout') {
             steps {
-                script {
-                    app = docker.build(IMAGE_NAME)
-                }
+                git branch: 'main', url: 'https://github.com/Aza-di/cicd-pipeline.git'
             }
         }
 
-        stage('Push Image to Docker Hub') {
+        stage('Application Build') {
             steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker_hub_creds_id') {
-                        app.push("${env.BUILD_NUMBER}")
-                        app.push("latest")
-                    }
+                sh './build.sh'
+            }
+        }
+
+        stage('Tests') {
+            steps {
+                sh './test.sh'
+            }
+        }
+
+        stage('Docker Image Build') {
+            steps {
+                sh 'docker build -t azat279/my-app:latest .'
+            }
+        }
+
+        stage('Docker Image Push') {
+            steps {
+                withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKER_TOKEN')]) {
+                    sh '''
+                    echo $DOCKER_TOKEN | docker login -u azat279 --password-stdin
+                    docker push azat279/my-app:latest
+                    '''
                 }
             }
         }
